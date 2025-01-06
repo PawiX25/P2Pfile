@@ -7,7 +7,11 @@ const fileInput = document.getElementById('fileInput');
 const progress = document.getElementById('progress');
 const transferStatus = document.getElementById('transferStatus');
 
-const CHUNK_SIZE = 16384;
+const CHUNK_SIZE = 262144;
+const MIN_CHUNK_SIZE = 32768;
+const MAX_CHUNK_SIZE = 1048576;
+let currentChunkSize = CHUNK_SIZE;
+let lastTransferSpeed = 0;
 
 let transferStartTime = 0;
 let lastUpdateTime = 0;
@@ -150,22 +154,47 @@ async function sendFileInChunks(file) {
 
     const buffer = await file.arrayBuffer();
     let offset = 0;
+    let throttleTimeout = 1;
 
     while (offset < buffer.byteLength) {
-        const chunk = buffer.slice(offset, offset + CHUNK_SIZE);
+        const chunk = buffer.slice(offset, offset + currentChunkSize);
         connection.send({
             type: 'file-chunk',
             chunk: chunk
         });
+        
         offset += chunk.byteLength;
         const progress = (offset / buffer.byteLength) * 100;
         updateProgress(progress);
-        updateTransferStatus(offset, buffer.byteLength);
-        await new Promise(resolve => setTimeout(resolve, 1));
+        
+        const now = Date.now();
+        const timeSinceLastUpdate = (now - lastUpdateTime) / 1000;
+        if (timeSinceLastUpdate >= 0.5) {
+            const currentSpeed = (offset - lastBytes) / timeSinceLastUpdate;
+            
+            if (currentSpeed > lastTransferSpeed) {
+                currentChunkSize = Math.min(currentChunkSize * 1.25, MAX_CHUNK_SIZE);
+                throttleTimeout = Math.max(throttleTimeout - 1, 0);
+            } else {
+                currentChunkSize = Math.max(currentChunkSize * 0.75, MIN_CHUNK_SIZE);
+                throttleTimeout = Math.min(throttleTimeout + 1, 5);
+            }
+            
+            lastTransferSpeed = currentSpeed;
+            updateTransferStatus(offset, buffer.byteLength);
+            lastBytes = offset;
+            lastUpdateTime = now;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, throttleTimeout));
     }
 
     connection.send({ type: 'file-end' });
-    setTimeout(() => updateProgress(0), 1000);
+    setTimeout(() => {
+        updateProgress(0);
+        currentChunkSize = CHUNK_SIZE;
+        lastTransferSpeed = 0;
+    }, 1000);
     transferStatus.textContent = '';
 }
 
