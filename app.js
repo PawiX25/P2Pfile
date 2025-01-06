@@ -219,14 +219,17 @@ function updateProgress(percent) {
     
     const waveContainer = document.getElementById('waveContainer');
     const liquidContent = document.getElementById('liquidContent');
+    const liquidFill = document.getElementById('liquidFill');
     
     if (percent === 0) {
         waveContainer.style.transform = 'translateY(100%)';
         liquidContent.style.transform = 'scaleY(0)';
+        liquidFill.style.transform = 'scaleY(0)';
     } else {
         const fillPercent = 1 - (percent / 100);
         waveContainer.style.transform = `translateY(${fillPercent * 100}%)`;
         liquidContent.style.transform = 'scaleY(1)';
+        liquidFill.style.transform = 'scaleY(1)';
     }
 }
 
