@@ -24,6 +24,15 @@ let receivedChunks = new Map();
 let expectedChunkIndex = 0;
 let totalReceivedSize = 0;
 
+let windowSize = 10;
+const MAX_WINDOW_SIZE = 50;
+const MIN_WINDOW_SIZE = 5;
+let retryCount = new Map();
+const MAX_RETRIES = 3;
+let lastAdjustmentTime = 0;
+const ADJUSTMENT_INTERVAL = 2000;
+let consecutiveTimeouts = 0;
+
 function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -163,6 +172,9 @@ function setupConnection() {
                 !(item.fileId === data.fileId && item.index === data.index)
             );
             
+            consecutiveTimeouts = 0;
+            retryCount.delete(data.index);
+            
             if (sendQueue.length === 0) {
                 isProcessingQueue = false;
             }
@@ -205,12 +217,13 @@ async function sendFileInChunks(file) {
     let chunkIndex = 0;
 
     while (offset < buffer.byteLength) {
-        const chunk = buffer.slice(offset, offset + CHUNK_SIZE);
+        const chunk = buffer.slice(offset, offset + currentChunkSize);
         const chunkData = {
             type: 'file-chunk',
             fileId: fileId,
             index: chunkIndex,
-            chunk: chunk
+            chunk: chunk,
+            timestamp: Date.now()
         };
 
         sendQueue.push(chunkData);
@@ -226,7 +239,7 @@ async function sendFileInChunks(file) {
         updateProgress(progress);
         updateTransferStatus(offset, buffer.byteLength);
 
-        while (sendQueue.length > 50) {
+        while (sendQueue.length > MAX_WINDOW_SIZE * 2) {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
     }
@@ -251,19 +264,68 @@ async function processQueue() {
     isProcessingQueue = true;
 
     while (sendQueue.length > 0) {
-        const chunk = sendQueue[0];
+        const activeChunks = sendQueue.slice(0, windowSize);
+        const sendPromises = activeChunks.map(async (chunk) => {
+            const retries = retryCount.get(chunk.index) || 0;
+            
+            if (retries >= MAX_RETRIES) {
+                throw new Error(`Failed to send chunk ${chunk.index} after ${MAX_RETRIES} attempts`);
+            }
+
+            try {
+                connection.send(chunk);
+                return new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        consecutiveTimeouts++;
+                        reject(new Error('Chunk acknowledgment timeout'));
+                    }, 5000);
+
+                    const checkAck = setInterval(() => {
+                        if (!sendQueue.includes(chunk)) {
+                            clearTimeout(timeout);
+                            clearInterval(checkAck);
+                            resolve();
+                        }
+                    }, 100);
+                });
+            } catch (error) {
+                retryCount.set(chunk.index, retries + 1);
+                console.error(`Chunk ${chunk.index} failed:`, error);
+                throw error;
+            }
+        });
+
         try {
-            connection.send(chunk);
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await Promise.all(sendPromises);
+            adjustTransferParameters();
         } catch (error) {
-            console.error('Error sending chunk:', error);
-            continue;
+            console.error('Error in chunk transmission:', error);
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
-        
-        await new Promise(resolve => setTimeout(resolve, 5));
+
+        await new Promise(resolve => setTimeout(resolve, 10));
     }
 
     isProcessingQueue = false;
+}
+
+function adjustTransferParameters() {
+    const now = Date.now();
+    if (now - lastAdjustmentTime < ADJUSTMENT_INTERVAL) return;
+    lastAdjustmentTime = now;
+
+    const currentSpeed = (lastBytes - totalReceivedSize) / ((now - lastUpdateTime) / 1000);
+    
+    if (consecutiveTimeouts > 0) {
+        windowSize = Math.max(MIN_WINDOW_SIZE, windowSize - 2);
+        currentChunkSize = Math.max(MIN_CHUNK_SIZE, currentChunkSize / 2);
+        consecutiveTimeouts = 0;
+    } else if (currentSpeed > lastTransferSpeed && windowSize < MAX_WINDOW_SIZE) {
+        windowSize = Math.min(MAX_WINDOW_SIZE, windowSize + 1);
+        currentChunkSize = Math.min(MAX_CHUNK_SIZE, currentChunkSize * 1.1);
+    }
+
+    lastTransferSpeed = currentSpeed;
 }
 
 fileInput.addEventListener('change', () => {
