@@ -17,6 +17,13 @@ let transferStartTime = 0;
 let lastUpdateTime = 0;
 let lastBytes = 0;
 
+let sendQueue = [];
+let isProcessingQueue = false;
+let currentFileId = null;
+let receivedChunks = new Map();
+let expectedChunkIndex = 0;
+let totalReceivedSize = 0;
+
 function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -34,19 +41,18 @@ function formatTime(seconds) {
 
 function updateTransferStatus(transferred, total, isReceiving = false) {
     const now = Date.now();
-    const elapsedTime = (now - transferStartTime) / 1000;
     const timeSinceLastUpdate = (now - lastUpdateTime) / 1000;
     
     if (timeSinceLastUpdate >= 0.5) {
         const bytesPerSecond = (transferred - lastBytes) / timeSinceLastUpdate;
-        const remainingBytes = total - transferred;
-        const remainingTime = remainingBytes / bytesPerSecond;
+        const remainingBytes = Math.max(total - transferred, 0);
+        const remainingTime = bytesPerSecond > 0 ? remainingBytes / bytesPerSecond : 0;
         
         const speed = formatBytes(bytesPerSecond) + '/s';
-        const progress = Math.round((transferred / total) * 100);
-        const timeLeft = formatTime(remainingTime);
+        const progress = Math.min(Math.round((transferred / total) * 100), 100);
+        const timeLeft = remainingTime > 0 ? formatTime(remainingTime) : '0s';
         
-        transferStatus.textContent = `${isReceiving ? 'Receiving' : 'Sending'}: ${formatBytes(transferred)} / ${formatBytes(total)} (${progress}%) | ${speed} | ETA: ${timeLeft}`;
+        transferStatus.textContent = `${isReceiving ? 'Receiving' : 'Sending'}: ${formatBytes(Math.min(transferred, total))} / ${formatBytes(total)} (${progress}%) | ${speed} | ETA: ${timeLeft}`;
         
         lastBytes = transferred;
         lastUpdateTime = now;
@@ -91,35 +97,75 @@ function setupConnection() {
         updateProgress(0);
     });
 
-    let receiveBuffer = [];
-    let receivedSize = 0;
     let fileInfo = null;
 
     connection.on('data', (data) => {
         if (data.type === 'file-start') {
             fileInfo = data;
-            receiveBuffer = [];
-            receivedSize = 0;
+            currentFileId = data.fileId;
+            receivedChunks.clear();
+            expectedChunkIndex = 0;
+            totalReceivedSize = 0;
             transferStartTime = Date.now();
             lastUpdateTime = transferStartTime;
             lastBytes = 0;
             updateProgress(0);
-        } else if (data.type === 'file-chunk') {
-            receiveBuffer.push(data.chunk);
-            receivedSize += data.chunk.byteLength;
-            const progress = (receivedSize / fileInfo.fileSize) * 100;
+        } 
+        else if (data.type === 'file-chunk') {
+            if (data.fileId !== currentFileId) return;
+            
+            receivedChunks.set(data.index, data.chunk);
+            totalReceivedSize = 0;
+            
+            for (const chunk of receivedChunks.values()) {
+                totalReceivedSize += chunk.byteLength;
+            }
+            
+            connection.send({
+                type: 'chunk-ack',
+                fileId: data.fileId,
+                index: data.index
+            });
+
+            while (receivedChunks.has(expectedChunkIndex)) {
+                expectedChunkIndex++;
+            }
+
+            const progress = Math.min((totalReceivedSize / fileInfo.fileSize) * 100, 100);
             updateProgress(progress);
-            updateTransferStatus(receivedSize, fileInfo.fileSize, true);
-        } else if (data.type === 'file-end') {
-            const blob = new Blob(receiveBuffer);
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileInfo.filename;
-            a.click();
-            URL.revokeObjectURL(url);
-            updateProgress(0);
-            transferStatus.textContent = '';
+            updateTransferStatus(totalReceivedSize, fileInfo.fileSize, true);
+        } 
+        else if (data.type === 'file-end') {
+            if (data.fileId !== currentFileId) return;
+            
+            const orderedChunks = [];
+            for (let i = 0; i < expectedChunkIndex; i++) {
+                const chunk = receivedChunks.get(i);
+                if (chunk) orderedChunks.push(chunk);
+            }
+
+            const blob = new Blob(orderedChunks);
+            if (blob.size === fileInfo.fileSize) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileInfo.filename;
+                a.click();
+                URL.revokeObjectURL(url);
+                receivedChunks.clear();
+                currentFileId = null;
+                updateProgress(0);
+                transferStatus.textContent = '';
+            }
+        }
+        else if (data.type === 'chunk-ack') {
+            sendQueue = sendQueue.filter(item => 
+                !(item.fileId === data.fileId && item.index === data.index)
+            );
+            
+            if (sendQueue.length === 0) {
+                isProcessingQueue = false;
+            }
         }
     });
 }
@@ -142,6 +188,7 @@ function updateProgress(percent) {
 }
 
 async function sendFileInChunks(file) {
+    const fileId = Date.now().toString();
     transferStartTime = Date.now();
     lastUpdateTime = transferStartTime;
     lastBytes = 0;
@@ -149,53 +196,74 @@ async function sendFileInChunks(file) {
     connection.send({
         type: 'file-start',
         filename: file.name,
-        fileSize: file.size
+        fileSize: file.size,
+        fileId: fileId
     });
 
     const buffer = await file.arrayBuffer();
     let offset = 0;
-    let throttleTimeout = 1;
+    let chunkIndex = 0;
 
     while (offset < buffer.byteLength) {
-        const chunk = buffer.slice(offset, offset + currentChunkSize);
-        connection.send({
+        const chunk = buffer.slice(offset, offset + CHUNK_SIZE);
+        const chunkData = {
             type: 'file-chunk',
+            fileId: fileId,
+            index: chunkIndex,
             chunk: chunk
-        });
+        };
+
+        sendQueue.push(chunkData);
         
-        offset += chunk.byteLength;
-        const progress = (offset / buffer.byteLength) * 100;
-        updateProgress(progress);
-        
-        const now = Date.now();
-        const timeSinceLastUpdate = (now - lastUpdateTime) / 1000;
-        if (timeSinceLastUpdate >= 0.5) {
-            const currentSpeed = (offset - lastBytes) / timeSinceLastUpdate;
-            
-            if (currentSpeed > lastTransferSpeed) {
-                currentChunkSize = Math.min(currentChunkSize * 1.25, MAX_CHUNK_SIZE);
-                throttleTimeout = Math.max(throttleTimeout - 1, 0);
-            } else {
-                currentChunkSize = Math.max(currentChunkSize * 0.75, MIN_CHUNK_SIZE);
-                throttleTimeout = Math.min(throttleTimeout + 1, 5);
-            }
-            
-            lastTransferSpeed = currentSpeed;
-            updateTransferStatus(offset, buffer.byteLength);
-            lastBytes = offset;
-            lastUpdateTime = now;
+        if (!isProcessingQueue) {
+            processQueue();
         }
 
-        await new Promise(resolve => setTimeout(resolve, throttleTimeout));
+        offset += chunk.byteLength;
+        chunkIndex++;
+        
+        const progress = (offset / buffer.byteLength) * 100;
+        updateProgress(progress);
+        updateTransferStatus(offset, buffer.byteLength);
+
+        while (sendQueue.length > 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
     }
 
-    connection.send({ type: 'file-end' });
+    while (sendQueue.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    connection.send({ 
+        type: 'file-end',
+        fileId: fileId
+    });
+    
     setTimeout(() => {
         updateProgress(0);
-        currentChunkSize = CHUNK_SIZE;
-        lastTransferSpeed = 0;
+        transferStatus.textContent = '';
     }, 1000);
-    transferStatus.textContent = '';
+}
+
+async function processQueue() {
+    if (isProcessingQueue) return;
+    isProcessingQueue = true;
+
+    while (sendQueue.length > 0) {
+        const chunk = sendQueue[0];
+        try {
+            connection.send(chunk);
+            await new Promise(resolve => setTimeout(resolve, 10));
+        } catch (error) {
+            console.error('Error sending chunk:', error);
+            continue;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 5));
+    }
+
+    isProcessingQueue = false;
 }
 
 fileInput.addEventListener('change', () => {
