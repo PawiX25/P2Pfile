@@ -184,15 +184,16 @@
                 </h2>
                 <div class="space-y-4">
                     <label class="block cursor-pointer group">
-                        <input type="file" id="fileInput" class="hidden">
+                        <input type="file" id="fileInput" class="hidden" multiple>
                         <div class="bg-gray-900/50 text-center py-8 px-6 rounded-lg border-2 border-dashed border-gray-700 group-hover:border-blue-500 transition-all">
                             <i class="fas fa-file-upload text-4xl mb-3 text-gray-400 group-hover:text-blue-400 transition-all"></i>
-                            <p class="text-gray-400 group-hover:text-blue-400 transition-all">Drop your file here or click to browse</p>
+                            <p class="text-gray-400 group-hover:text-blue-400 transition-all">Drop your files here or click to browse</p>
                         </div>
                     </label>
+                    <div id="fileQueue" class="max-h-40 overflow-y-auto space-y-2"></div>
                     <button id="sendFile" disabled 
                         class="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 px-6 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                        <i class="fas fa-paper-plane mr-2"></i>Send File
+                        <i class="fas fa-paper-plane mr-2"></i>Send Files
                     </button>
                     <div id="progress" class="h-2 bg-gray-700 rounded-full overflow-hidden">
                         <div class="h-full w-0 bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"></div>
