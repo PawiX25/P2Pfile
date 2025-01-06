@@ -83,7 +83,7 @@ function updateStatus(message, className = '') {
 }
 
 document.getElementById('createPeer').addEventListener('click', () => {
-    const peerId = document.getElementById('peerId').value;
+    const peerId = document.getElementById('peerId').value || Math.random().toString(36).substring(2, 6);
     peer = new Peer(peerId);
     
     peer.on('open', (id) => {
@@ -99,7 +99,7 @@ document.getElementById('createPeer').addEventListener('click', () => {
 document.getElementById('connect').addEventListener('click', () => {
     const connectTo = document.getElementById('connectTo').value;
     if (!peer) {
-        const randomId = Math.random().toString(36).substr(2, 9);
+        const randomId = Math.random().toString(36).substring(2, 6);
         peer = new Peer(randomId);
         
         peer.on('open', (id) => {
