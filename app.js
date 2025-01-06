@@ -98,8 +98,25 @@ document.getElementById('createPeer').addEventListener('click', () => {
 
 document.getElementById('connect').addEventListener('click', () => {
     const connectTo = document.getElementById('connectTo').value;
-    connection = peer.connect(connectTo);
-    setupConnection();
+    if (!peer) {
+        const randomId = Math.random().toString(36).substr(2, 9);
+        peer = new Peer(randomId);
+        
+        peer.on('open', (id) => {
+            document.getElementById('peerId').value = id;
+            updateStatus(`Your peer ID is: ${id}`);
+            connection = peer.connect(connectTo);
+            setupConnection();
+        });
+
+        peer.on('connection', (conn) => {
+            connection = conn;
+            setupConnection();
+        });
+    } else {
+        connection = peer.connect(connectTo);
+        setupConnection();
+    }
 });
 
 function setupConnection() {
