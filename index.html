@@ -13,6 +13,7 @@
                     animation: {
                         'gradient': 'gradient 8s linear infinite',
                         'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         gradient: {
@@ -134,11 +135,60 @@
             50% { background-position: 100% 50% }
             100% { background-position: 0% 50% }
         }
+
+        .glass-card {
+            background: rgba(17, 25, 40, 0.75);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .neo-brutalism {
+            background: rgba(17, 25, 40, 0.9);
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 8px 8px 0px rgba(59, 130, 246, 0.5);
+            transform: translate(-4px, -4px);
+            transition: all 0.2s ease;
+        }
+
+        .neo-brutalism:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px rgba(59, 130, 246, 0.5);
+        }
+
+        .bg-gradient-new {
+            background: linear-gradient(135deg, 
+                rgba(17, 24, 39, 0.95),
+                rgba(29, 78, 216, 0.8),
+                rgba(17, 24, 39, 0.95)
+            );
+        }
+
+        .glow-effect {
+            position: relative;
+        }
+
+        .glow-effect::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(45deg, #3b82f6, #60a5fa, #93c5fd);
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .glow-effect:hover::before {
+            opacity: 1;
+        }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-animated relative overflow-hidden">
-    <div class="decoration-circle w-96 h-96 top-[-100px] left-[-100px]"></div>
-    <div class="decoration-circle w-96 h-96 bottom-[-100px] right-[-100px]"></div>
+<body class="min-h-screen bg-gradient-new relative overflow-hidden text-gray-100">
+    <div class="fixed inset-0 pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow"></div>
+    </div>
 
     <div class="wave-container" id="waveContainer">
         <div class="liquid-content" id="liquidContent"></div>
@@ -147,63 +197,73 @@
         <div class="wave wave-3"></div>
         <div class="glow"></div>
     </div>
-    <div class="container mx-auto px-4 py-16 max-w-4xl relative z-10">
+    <div class="container mx-auto px-4 py-12 max-w-5xl relative z-10">
         <div class="text-center mb-16 animate-float">
-            <h1 class="text-6xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text animate-gradient">Transwave</h1>
-            <p class="text-blue-200 text-xl">Secure peer-to-peer file transfer</p>
+            <h1 class="text-7xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500 text-transparent bg-clip-text animate-gradient">Transwave</h1>
+            <p class="text-xl text-blue-200 opacity-90">Secure peer-to-peer file transfer made simple</p>
         </div>
         
-        <div class="grid md:grid-cols-2 gap-8">
-            <div class="glass-morphism rounded-xl shadow-2xl p-8 transition-all duration-300">
-                <h2 class="text-2xl font-semibold mb-6 text-blue-200 flex items-center">
+        <div class="grid lg:grid-cols-2 gap-8">
+            <div class="neo-brutalism rounded-2xl p-8">
+                <h2 class="text-2xl font-bold mb-8 text-blue-100 flex items-center">
                     <i class="fas fa-network-wired mr-3 text-blue-400"></i>
                     Connection
                 </h2>
-                <div class="space-y-4">
-                    <div class="relative">
-                        <input type="text" id="peerId" placeholder="Your peer ID" 
-                            class="w-full bg-gray-900/50 text-gray-200 py-3 px-4 rounded-lg border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
-                        <button id="createPeer" class="absolute right-2 top-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 py-1 px-4 rounded-lg transition-all">
-                            <i class="fas fa-plus-circle mr-2"></i>Create
-                        </button>
+                <div class="space-y-6">
+                    <div class="relative glow-effect p-[1px] rounded-xl">
+                        <div class="relative bg-gray-900/70 rounded-xl p-2">
+                            <input type="text" id="peerId" placeholder="Your peer ID" 
+                                class="w-full bg-transparent text-gray-100 py-3 px-4 rounded-lg focus:outline-none">
+                            <button id="createPeer" class="absolute right-2 top-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-plus-circle mr-2"></i>Create
+                            </button>
+                        </div>
                     </div>
-                    <div class="relative">
-                        <input type="text" id="connectTo" placeholder="Connect to peer ID" 
-                            class="w-full bg-gray-900/50 text-gray-200 py-3 px-4 rounded-lg border border-gray-700 focus:border-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all">
-                        <button id="connect" class="absolute right-2 top-2 bg-green-500/20 hover:bg-green-500/40 text-green-400 py-1 px-4 rounded-lg transition-all">
-                            <i class="fas fa-link mr-2"></i>Connect
-                        </button>
+                    <div class="relative glow-effect p-[1px] rounded-xl">
+                        <div class="relative bg-gray-900/70 rounded-xl p-2">
+                            <input type="text" id="connectTo" placeholder="Connect to peer ID" 
+                                class="w-full bg-transparent text-gray-100 py-3 px-4 rounded-lg focus:outline-none">
+                            <button id="connect" class="absolute right-2 top-2 bg-green-500/20 hover:bg-green-500/40 text-green-300 py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-link mr-2"></i>Connect
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="glass-morphism rounded-xl shadow-2xl p-8 transition-all duration-300">
-                <h2 class="text-2xl font-semibold mb-6 text-blue-200 flex items-center">
+            <div class="neo-brutalism rounded-2xl p-8">
+                <h2 class="text-2xl font-bold mb-8 text-blue-100 flex items-center">
                     <i class="fas fa-file-export mr-3 text-blue-400"></i>
                     File Transfer
                 </h2>
-                <div class="space-y-4">
-                    <label class="block cursor-pointer group">
+                <div class="space-y-6">
+                    <label class="block cursor-pointer">
                         <input type="file" id="fileInput" class="hidden" multiple>
-                        <div class="bg-gray-900/50 text-center py-8 px-6 rounded-lg border-2 border-dashed border-gray-700 group-hover:border-blue-500 transition-all">
-                            <i class="fas fa-file-upload text-4xl mb-3 text-gray-400 group-hover:text-blue-400 transition-all"></i>
-                            <p class="text-gray-400 group-hover:text-blue-400 transition-all">Drop your files here or click to browse</p>
+                        <div class="relative glow-effect p-[1px] rounded-xl">
+                            <div class="bg-gray-900/70 text-center py-8 px-6 rounded-xl transition-all">
+                                <i class="fas fa-cloud-upload-alt text-5xl mb-4 text-blue-400"></i>
+                                <p class="text-blue-200">Drop your files here or click to browse</p>
+                            </div>
                         </div>
                     </label>
-                    <div id="fileQueue" class="max-h-40 overflow-y-auto space-y-2"></div>
-                    <button id="sendFile" disabled 
-                        class="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 px-6 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                        <i class="fas fa-paper-plane mr-2"></i>Send Files
-                    </button>
-                    <div id="progress" class="h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div class="h-full w-0 bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"></div>
+                    <div id="fileQueue" class="max-h-40 overflow-y-auto space-y-3"></div>
+                    <div class="space-y-4">
+                        <button id="sendFile" disabled 
+                            class="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            <i class="fas fa-paper-plane mr-2"></i>Send Files
+                        </button>
+                        <div class="bg-gray-900/50 rounded-full p-1">
+                            <div id="progress" class="h-2 rounded-full overflow-hidden">
+                                <div class="h-full w-0 bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"></div>
+                            </div>
+                        </div>
+                        <div id="transferStatus" class="text-sm text-gray-400 text-center"></div>
                     </div>
-                    <div id="transferStatus" class="text-sm text-gray-400"></div>
                 </div>
             </div>
         </div>
 
-        <div id="status" class="mt-8 glass-morphism rounded-xl p-6 text-center text-blue-200 transform transition-all duration-300" style="display: none"></div>
+        <div id="status" class="mt-8 glass-card rounded-2xl p-6 text-center transform transition-all duration-300" style="display: none"></div>
     </div>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="app.js"></script>
