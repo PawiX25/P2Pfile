@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transwave</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'gradient': 'gradient 8s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        gradient: {
+                            '0%, 100%': {
+                                'background-size': '200% 200%',
+                                'background-position': 'left center'
+                            },
+                            '50%': {
+                                'background-size': '200% 200%',
+                                'background-position': 'right center'
+                            }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .wave-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background: linear-gradient(180deg, rgba(30,41,59,0) 0%, rgba(30,41,59,0.3) 100%);
+            transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .wave {
+            position: absolute;
+            top: -100px;
+            left: 0;
+            width: 200%;
+            height: 100px;
+            background: url('data:image/svg+xml,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg"><path d="M0 60 Q 150 0, 300 60 T 600 60 T 900 60 T 1200 60 L 1200 120 L 0 120 Z" fill="rgba(59,130,246,0.4)"/></svg>') repeat-x;
+            animation: wave 25s linear infinite;
+            transform-origin: center bottom;
+        }
+
+        .wave-2 {
+            top: -80px;
+            animation: wave 20s linear infinite;
+            opacity: 0.6;
+            background: url('data:image/svg+xml,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg"><path d="M0 60 Q 150 30, 300 60 T 600 60 T 900 60 T 1200 60 L 1200 120 L 0 120 Z" fill="rgba(96,165,250,0.4)"/></svg>') repeat-x;
+        }
+
+        .wave-3 {
+            top: -60px;
+            animation: wave 15s linear infinite;
+            opacity: 0.4;
+            background: url('data:image/svg+xml,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg"><path d="M0 60 Q 150 90, 300 60 T 600 60 T 900 60 T 1200 60 L 1200 120 L 0 120 Z" fill="rgba(147,197,253,0.4)"/></svg>') repeat-x;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(0) scaleY(1); }
+            50% { transform: translateX(-25%) scaleY(1.1); }
+            100% { transform: translateX(-50%) scaleY(1); }
+        }
+
+        .liquid-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(180deg, 
+                rgba(37,99,235,0.1) 0%, 
+                rgba(37,99,235,0.2) 50%,
+                rgba(37,99,235,0.3) 100%
+            );
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: bottom;
+            transform: scaleY(0);
+        }
+
+        .glow {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: linear-gradient(180deg, 
+                rgba(37,99,235,0) 0%, 
+                rgba(37,99,235,0.2) 50%,
+                rgba(37,99,235,0.4) 100%
+            );
+            filter: blur(30px);
+        }
+
+        .glass-morphism {
+            background: rgba(17, 25, 40, 0.75);
+            backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+        }
+
+        .bg-gradient-animated {
+            background: linear-gradient(-45deg, #1e40af, #3b82f6, #1e1b4b, #3730a3);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        .decoration-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.5), rgba(59, 130, 246, 0));
+            filter: blur(32px);
+            z-index: -1;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50% }
+            50% { background-position: 100% 50% }
+            100% { background-position: 0% 50% }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-animated relative overflow-hidden">
+    <div class="decoration-circle w-96 h-96 top-[-100px] left-[-100px]"></div>
+    <div class="decoration-circle w-96 h-96 bottom-[-100px] right-[-100px]"></div>
+
+    <div class="wave-container" id="waveContainer">
+        <div class="liquid-content" id="liquidContent"></div>
+        <div class="wave"></div>
+        <div class="wave wave-2"></div>
+        <div class="wave wave-3"></div>
+        <div class="glow"></div>
+    </div>
+    <div class="container mx-auto px-4 py-16 max-w-4xl relative z-10">
+        <div class="text-center mb-16 animate-float">
+            <h1 class="text-6xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text animate-gradient">Transwave</h1>
+            <p class="text-blue-200 text-xl">Secure peer-to-peer file transfer</p>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="glass-morphism rounded-xl shadow-2xl p-8 transition-all duration-300">
+                <h2 class="text-2xl font-semibold mb-6 text-blue-200 flex items-center">
+                    <i class="fas fa-network-wired mr-3 text-blue-400"></i>
+                    Connection
+                </h2>
+                <div class="space-y-4">
+                    <div class="relative">
+                        <input type="text" id="peerId" placeholder="Your peer ID" 
+                            class="w-full bg-gray-900/50 text-gray-200 py-3 px-4 rounded-lg border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                        <button id="createPeer" class="absolute right-2 top-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 py-1 px-4 rounded-lg transition-all">
+                            <i class="fas fa-plus-circle mr-2"></i>Create
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="connectTo" placeholder="Connect to peer ID" 
+                            class="w-full bg-gray-900/50 text-gray-200 py-3 px-4 rounded-lg border border-gray-700 focus:border-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all">
+                        <button id="connect" class="absolute right-2 top-2 bg-green-500/20 hover:bg-green-500/40 text-green-400 py-1 px-4 rounded-lg transition-all">
+                            <i class="fas fa-link mr-2"></i>Connect
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-morphism rounded-xl shadow-2xl p-8 transition-all duration-300">
+                <h2 class="text-2xl font-semibold mb-6 text-blue-200 flex items-center">
+                    <i class="fas fa-file-export mr-3 text-blue-400"></i>
+                    File Transfer
+                </h2>
+                <div class="space-y-4">
+                    <label class="block cursor-pointer group">
+                        <input type="file" id="fileInput" class="hidden">
+                        <div class="bg-gray-900/50 text-center py-8 px-6 rounded-lg border-2 border-dashed border-gray-700 group-hover:border-blue-500 transition-all">
+                            <i class="fas fa-file-upload text-4xl mb-3 text-gray-400 group-hover:text-blue-400 transition-all"></i>
+                            <p class="text-gray-400 group-hover:text-blue-400 transition-all">Drop your file here or click to browse</p>
+                        </div>
+                    </label>
+                    <button id="sendFile" disabled 
+                        class="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 px-6 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                        <i class="fas fa-paper-plane mr-2"></i>Send File
+                    </button>
+                    <div id="progress" class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="h-full w-0 bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"></div>
+                    </div>
+                    <div id="transferStatus" class="text-sm text-gray-400"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="status" class="mt-8 glass-morphism rounded-xl p-6 text-center text-blue-200 transform transition-all duration-300" style="display: none"></div>
+    </div>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
