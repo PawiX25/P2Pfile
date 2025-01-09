@@ -368,21 +368,49 @@ function updateFileQueue() {
     
     fileQueue.forEach((file, index) => {
         const fileElement = document.createElement('div');
-        fileElement.className = 'flex items-center justify-between bg-gray-900/50 p-2 rounded-lg';
+        fileElement.className = 'flex items-center justify-between bg-gray-900/50 p-2 rounded-lg cursor-move group hover:bg-gray-800/50 transition-colors';
+        fileElement.setAttribute('data-index', index);
+
+        const extension = file.name.split('.').pop().toUpperCase();
+        
         fileElement.innerHTML = `
-            <div class="flex items-center space-x-2">
-                <i class="fas fa-file text-blue-400"></i>
-                <span class="text-gray-200 text-sm truncate">${file.name} (${formatBytes(file.size)})</span>
+            <div class="flex items-center min-w-0 flex-1">
+                <i class="fas fa-grip-vertical text-gray-500 mr-2 group-hover:text-gray-400"></i>
+                <div class="bg-blue-500/20 rounded px-2 py-1 mr-2 w-14 text-center">
+                    <span class="text-xs font-mono text-blue-300">${extension}</span>
+                </div>
+                <div class="truncate flex-1">
+                    <span class="text-gray-200 text-sm" title="${file.name}">${file.name}</span>
+                    <div class="text-xs text-gray-400">${formatBytes(file.size)}</div>
+                </div>
+                <button class="text-red-400 hover:text-red-300 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" onclick="removeFromQueue(${index})" title="Remove file">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <button class="text-red-400 hover:text-red-300" onclick="removeFromQueue(${index})">
-                <i class="fas fa-times"></i>
-            </button>
         `;
         queueElement.appendChild(fileElement);
     });
     
     sendFileBtn.disabled = fileQueue.length === 0 || !connection;
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    new Sortable(document.getElementById('fileQueue'), {
+        animation: 150,
+        ghostClass: 'bg-blue-900/30',
+        handle: '.fa-grip-vertical',
+        onEnd: function(evt) {
+            const oldIndex = evt.oldIndex;
+            const newIndex = evt.newIndex;
+            
+            if (oldIndex !== newIndex) {
+                const item = fileQueue.splice(oldIndex, 1)[0];
+                fileQueue.splice(newIndex, 0, item);
+                updateFileQueue();
+            }
+        }
+    });
+});
 
 function removeFromQueue(index) {
     fileQueue.splice(index, 1);

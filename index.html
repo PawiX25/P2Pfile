@@ -32,7 +32,36 @@
                         }
                     }
                 }
-            }
+            },
+            plugins: [
+                function({ addUtilities }) {
+                    const newUtilities = {
+                        '.scrollbar-hidden': {
+                            'scrollbar-width': 'none',
+                            '-ms-overflow-style': 'none',
+                            '&::-webkit-scrollbar': {
+                                display: 'none'
+                            }
+                        },
+                        '.scrollbar-custom': {
+                            '&::-webkit-scrollbar': {
+                                width: '4px',
+                            },
+                            '&::-webkit-scrollbar-track': {
+                                background: 'transparent'
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                background: 'rgba(59, 130, 246, 0.3)',
+                                borderRadius: '6px'
+                            },
+                            '&::-webkit-scrollbar-thumb:hover': {
+                                background: 'rgba(59, 130, 246, 0.5)'
+                            }
+                        }
+                    };
+                    addUtilities(newUtilities, ['responsive', 'hover']);
+                }
+            ]
         }
     </script>
     <style>
@@ -270,7 +299,7 @@
                             </div>
                         </div>
                     </label>
-                    <div id="fileQueue" class="max-h-40 overflow-y-auto space-y-3"></div>
+                    <div id="fileQueue" class="max-h-48 overflow-y-auto space-y-2 scrollbar-custom"></div>
                     <div class="space-y-4">
                         <button id="sendFile" disabled 
                             class="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
@@ -290,6 +319,7 @@
         <div id="status" class="mt-8 glass-card rounded-2xl p-6 text-center transform transition-all duration-300 text-lg font-medium" style="display: none"></div>
     </div>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
