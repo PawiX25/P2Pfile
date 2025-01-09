@@ -442,3 +442,52 @@ sendFileBtn.addEventListener('click', async () => {
         updateProgress(0);
     }
 });
+
+const dropZone = document.getElementById('dropZone');
+const dropArea = document.getElementById('dropArea');
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function highlight() {
+    dropArea.classList.add('drag-over');
+}
+
+function unhighlight() {
+    dropArea.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    preventDefaults(e);
+    unhighlight();
+
+    const dt = e.dataTransfer;
+    const files = [...dt.files];
+    
+    fileQueue.push(...files);
+    updateFileQueue();
+    
+    const text = files.length > 1 
+        ? `${files.length} files selected` 
+        : files[0]?.name || 'Drop your files here or click to browse';
+    
+    dropArea.querySelector('p').textContent = text;
+    dropArea.classList.add('border-blue-500', 'bg-blue-500/10');
+}
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+});
+
+dropZone.addEventListener('drop', handleDrop, false);

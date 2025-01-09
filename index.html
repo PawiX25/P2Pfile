@@ -200,6 +200,11 @@
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
         }
+
+        .drag-over {
+            border: 2px dashed rgba(59, 130, 246, 0.5) !important;
+            background: rgba(59, 130, 246, 0.1) !important;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-new relative overflow-hidden text-gray-100">
@@ -256,10 +261,10 @@
                     File Transfer
                 </h2>
                 <div class="space-y-6">
-                    <label class="block cursor-pointer">
+                    <label class="block cursor-pointer" id="dropZone">
                         <input type="file" id="fileInput" class="hidden" multiple>
                         <div class="relative glow-effect p-[1px] rounded-xl">
-                            <div class="bg-gray-900/70 text-center py-8 px-6 rounded-xl transition-all">
+                            <div class="bg-gray-900/70 text-center py-8 px-6 rounded-xl transition-all" id="dropArea">
                                 <i class="fas fa-cloud-upload-alt text-5xl mb-4 text-blue-400"></i>
                                 <p class="text-blue-200">Drop your files here or click to browse</p>
                             </div>
