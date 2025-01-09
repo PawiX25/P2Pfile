@@ -144,23 +144,23 @@
         }
 
         .neo-brutalism {
-            background: rgba(17, 25, 40, 0.9);
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 8px 8px 0px rgba(59, 130, 246, 0.5);
+            background: rgba(11, 17, 29, 0.95);
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 8px 8px 0px rgba(59, 130, 246, 0.6);
             transform: translate(-4px, -4px);
             transition: all 0.2s ease;
         }
 
         .neo-brutalism:hover {
             transform: translate(-2px, -2px);
-            box-shadow: 4px 4px 0px rgba(59, 130, 246, 0.5);
+            box-shadow: 4px 4px 0px rgba(59, 130, 246, 0.6);
         }
 
         .bg-gradient-new {
             background: linear-gradient(135deg, 
-                rgba(17, 24, 39, 0.95),
-                rgba(29, 78, 216, 0.8),
-                rgba(17, 24, 39, 0.95)
+                rgba(11, 17, 29, 0.98),
+                rgba(29, 78, 216, 0.9),
+                rgba(11, 17, 29, 0.98)
             );
         }
 
@@ -218,8 +218,8 @@
     </div>
     <div class="container mx-auto px-4 py-12 max-w-5xl relative z-10">
         <div class="text-center mb-16 animate-float">
-            <h1 class="text-7xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500 text-transparent bg-clip-text animate-gradient">Transwave</h1>
-            <p class="text-xl text-blue-200 opacity-90">Secure peer-to-peer file transfer made simple</p>
+            <h1 class="text-7xl font-bold mb-4 bg-gradient-to-r from-blue-300 via-blue-400 to-indigo-400 text-transparent bg-clip-text animate-gradient">Transwave</h1>
+            <p class="text-xl text-blue-100 opacity-90 font-medium">Secure peer-to-peer file transfer made simple</p>
         </div>
         
         <div class="grid lg:grid-cols-2 gap-8">
@@ -230,19 +230,19 @@
                 </h2>
                 <div class="space-y-6">
                     <div class="relative glow-effect p-[1px] rounded-xl">
-                        <div class="relative bg-gray-900/70 rounded-xl p-2">
+                        <div class="relative bg-gray-900/80 rounded-xl p-2">
                             <input type="text" id="peerId" placeholder="Your peer ID" 
-                                class="w-full bg-transparent text-gray-100 py-3 px-4 rounded-lg focus:outline-none">
-                            <button id="createPeer" class="absolute right-2 top-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 py-2 px-4 rounded-lg transition-all">
+                                class="w-full bg-transparent text-gray-100 py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+                            <button id="createPeer" class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500/30 hover:bg-blue-500/50 text-blue-200 py-2 px-4 rounded-lg transition-all">
                                 <i class="fas fa-plus-circle mr-2"></i>Create
                             </button>
                         </div>
                     </div>
                     <div class="relative glow-effect p-[1px] rounded-xl">
-                        <div class="relative bg-gray-900/70 rounded-xl p-2">
+                        <div class="relative bg-gray-900/80 rounded-xl p-2">
                             <input type="text" id="connectTo" placeholder="Connect to peer ID" 
-                                class="w-full bg-transparent text-gray-100 py-3 px-4 rounded-lg focus:outline-none">
-                            <button id="connect" class="absolute right-2 top-2 bg-green-500/20 hover:bg-green-500/40 text-green-300 py-2 px-4 rounded-lg transition-all">
+                                class="w-full bg-transparent text-gray-100 py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50">
+                            <button id="connect" class="absolute right-2 top-1/2 -translate-y-1/2 bg-green-500/30 hover:bg-green-500/50 text-green-200 py-2 px-4 rounded-lg transition-all">
                                 <i class="fas fa-link mr-2"></i>Connect
                             </button>
                         </div>
@@ -282,7 +282,7 @@
             </div>
         </div>
 
-        <div id="status" class="mt-8 glass-card rounded-2xl p-6 text-center transform transition-all duration-300" style="display: none"></div>
+        <div id="status" class="mt-8 glass-card rounded-2xl p-6 text-center transform transition-all duration-300 text-lg font-medium" style="display: none"></div>
     </div>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="app.js"></script>
