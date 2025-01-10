@@ -14,6 +14,13 @@ A secure peer-to-peer file transfer web application that allows direct file shar
 - Adaptive chunk size and window size for optimal performance
 - File queue management
 - Connection status indicators
+- End-to-end encryption for all file transfers
+- Secure key exchange using ECDH
+- AES-GCM encryption for file chunks
+- Checksum verification for file integrity
+- Drag and drop file support
+- Sortable file queue
+- Visual transfer progress with wave animation
 
 ## How to Use
 
@@ -26,6 +33,14 @@ A secure peer-to-peer file transfer web application that allows direct file shar
    - Click "Send Files" to start the transfer
    - Receiving files will automatically trigger a download
 
+## Security Features
+
+- **End-to-End Encryption**: All files are encrypted before transmission
+- **ECDH Key Exchange**: Secure key exchange between peers
+- **AES-GCM Encryption**: Strong encryption for file chunks
+- **No Server Storage**: Files exist only on sender and receiver devices
+- **Integrity Verification**: SHA-256 checksums for all transferred files
+
 ## Technical Features
 
 - WebRTC-based peer connections using PeerJS
@@ -33,6 +48,13 @@ A secure peer-to-peer file transfer web application that allows direct file shar
 - Dynamic transfer optimization
 - Responsive design using Tailwind CSS
 - Modern glass morphism and neo-brutalism design elements
+- End-to-end encryption using Web Crypto API
+- ECDH (P-384) for key exchange
+- AES-GCM for file encryption
+- SHA-256 for file integrity verification
+- Sortable.js for queue management
+- TailwindCSS for responsive design
+- Glass morphism and neo-brutalism UI elements
 
 ## Performance
 
@@ -48,6 +70,8 @@ Works in modern browsers that support:
 - ES6+ JavaScript
 - CSS Grid and Flexbox
 - Backdrop Filter
+- Web Crypto API
+- Secure Context (HTTPS or localhost)
 
 ## Setup
 
