@@ -119,6 +119,18 @@ document.getElementById('connect').addEventListener('click', () => {
     }
 });
 
+async function calculateChecksum(buffer) {
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+async function verifyChecksum(buffer, expectedChecksum) {
+    const actualChecksum = await calculateChecksum(buffer);
+    return actualChecksum === expectedChecksum;
+}
+
 function setupConnection() {
     sendFileBtn.disabled = false;
     
@@ -132,7 +144,7 @@ function setupConnection() {
     let totalFilesExpected = 0;
     let currentFileNumber = 0;
 
-    connection.on('data', (data) => {
+    connection.on('data', async (data) => {
         if (data.type === 'transfer-start') {
             totalFilesExpected = data.totalFiles;
             currentFileNumber = 0;
@@ -186,12 +198,23 @@ function setupConnection() {
 
             const blob = new Blob(orderedChunks);
             if (blob.size === fileInfo.fileSize) {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileInfo.filename;
-                a.click();
-                URL.revokeObjectURL(url);
+                const arrayBuffer = await blob.arrayBuffer();
+                const isValid = await verifyChecksum(arrayBuffer, data.checksum);
+                
+                if (isValid) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileInfo.filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    updateStatus(`File "${fileInfo.filename}" received and verified successfully!`, 
+                        'mt-8 bg-green-500/20 text-green-400 backdrop-blur-lg rounded-xl p-6 text-center border border-green-500/50');
+                } else {
+                    updateStatus(`Checksum verification failed for "${fileInfo.filename}"! File may be corrupted.`,
+                        'mt-8 bg-red-500/20 text-red-400 backdrop-blur-lg rounded-xl p-6 text-center border border-red-500/50');
+                }
+                
                 receivedChunks.clear();
                 currentFileId = null;
                 updateProgress(0);
@@ -239,6 +262,9 @@ async function sendFileInChunks(file) {
     lastUpdateTime = transferStartTime;
     lastBytes = 0;
     
+    const buffer = await file.arrayBuffer();
+    const checksum = await calculateChecksum(buffer);
+    
     connection.send({
         type: 'file-start',
         filename: file.name,
@@ -246,7 +272,6 @@ async function sendFileInChunks(file) {
         fileId: fileId
     });
 
-    const buffer = await file.arrayBuffer();
     let offset = 0;
     let chunkIndex = 0;
 
@@ -284,7 +309,8 @@ async function sendFileInChunks(file) {
 
     connection.send({ 
         type: 'file-end',
-        fileId: fileId
+        fileId: fileId,
+        checksum: checksum
     });
     
     setTimeout(() => {
