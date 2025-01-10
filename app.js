@@ -36,6 +36,77 @@ let consecutiveTimeouts = 0;
 let fileQueue = [];
 let isTransferring = false;
 
+let sharedKey = null;
+let localKeyPair = null;
+
+async function generateKeyPair() {
+    return await window.crypto.subtle.generateKey(
+        {
+            name: "ECDH",
+            namedCurve: "P-384"
+        },
+        true,
+        ["deriveKey"]
+    );
+}
+
+async function deriveSharedKey(publicKeyJwk) {
+    const peerPublicKey = await window.crypto.subtle.importKey(
+        "jwk",
+        publicKeyJwk,
+        {
+            name: "ECDH",
+            namedCurve: "P-384"
+        },
+        false,
+        []
+    );
+
+    return await window.crypto.subtle.deriveKey(
+        {
+            name: "ECDH",
+            public: peerPublicKey
+        },
+        localKeyPair.privateKey,
+        {
+            name: "AES-GCM",
+            length: 256
+        },
+        false,
+        ["encrypt", "decrypt"]
+    );
+}
+
+async function encryptChunk(chunk) {
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const encryptedData = await window.crypto.subtle.encrypt(
+        {
+            name: "AES-GCM",
+            iv: iv
+        },
+        sharedKey,
+        chunk
+    );
+    
+    return {
+        encrypted: new Uint8Array(encryptedData),
+        iv: iv
+    };
+}
+
+async function decryptChunk(encryptedData, iv) {
+    return new Uint8Array(
+        await window.crypto.subtle.decrypt(
+            {
+                name: "AES-GCM",
+                iv: iv
+            },
+            sharedKey,
+            encryptedData
+        )
+    );
+}
+
 function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -134,10 +205,21 @@ async function verifyChecksum(buffer, expectedChecksum) {
 function setupConnection() {
     sendFileBtn.disabled = false;
     
-    connection.on('open', () => {
+    connection.on('open', async () => {
         updateStatus('Connected to peer!', 'mt-8 bg-green-500/20 text-green-400 backdrop-blur-lg rounded-xl p-6 text-center border border-green-500/50');
         updateProgress(0);
         sendFileBtn.disabled = fileQueue.length === 0;
+
+        localKeyPair = await generateKeyPair();
+        const publicKeyJwk = await window.crypto.subtle.exportKey(
+            "jwk",
+            localKeyPair.publicKey
+        );
+        
+        connection.send({
+            type: 'public-key',
+            key: publicKeyJwk
+        });
     });
 
     let fileInfo = null;
@@ -145,6 +227,11 @@ function setupConnection() {
     let currentFileNumber = 0;
 
     connection.on('data', async (data) => {
+        if (data.type === 'public-key') {
+            sharedKey = await deriveSharedKey(data.key);
+            return;
+        }
+
         if (data.type === 'transfer-start') {
             totalFilesExpected = data.totalFiles;
             currentFileNumber = 0;
@@ -166,26 +253,32 @@ function setupConnection() {
         else if (data.type === 'file-chunk') {
             if (data.fileId !== currentFileId) return;
             
-            receivedChunks.set(data.index, data.chunk);
-            totalReceivedSize = 0;
-            
-            for (const chunk of receivedChunks.values()) {
-                totalReceivedSize += chunk.byteLength;
+            try {
+                const decryptedChunk = await decryptChunk(data.chunk, data.iv);
+                receivedChunks.set(data.index, decryptedChunk);
+                totalReceivedSize = 0;
+                
+                for (const chunk of receivedChunks.values()) {
+                    totalReceivedSize += chunk.byteLength;
+                }
+                
+                connection.send({
+                    type: 'chunk-ack',
+                    fileId: data.fileId,
+                    index: data.index
+                });
+    
+                while (receivedChunks.has(expectedChunkIndex)) {
+                    expectedChunkIndex++;
+                }
+    
+                const progress = Math.min((totalReceivedSize / fileInfo.fileSize) * 100, 100);
+                updateProgress(progress);
+                updateTransferStatus(totalReceivedSize, fileInfo.fileSize, true, fileInfo.filename);
+            } catch (error) {
+                console.error('Decryption error:', error);
+                updateStatus('Decryption failed', 'mt-8 bg-red-500/20 text-red-400 backdrop-blur-lg rounded-xl p-6 text-center border border-red-500/50');
             }
-            
-            connection.send({
-                type: 'chunk-ack',
-                fileId: data.fileId,
-                index: data.index
-            });
-
-            while (receivedChunks.has(expectedChunkIndex)) {
-                expectedChunkIndex++;
-            }
-
-            const progress = Math.min((totalReceivedSize / fileInfo.fileSize) * 100, 100);
-            updateProgress(progress);
-            updateTransferStatus(totalReceivedSize, fileInfo.fileSize, true, fileInfo.filename);
         } 
         else if (data.type === 'file-end') {
             if (data.fileId !== currentFileId) return;
@@ -277,11 +370,14 @@ async function sendFileInChunks(file) {
 
     while (offset < buffer.byteLength) {
         const chunk = buffer.slice(offset, offset + currentChunkSize);
+        const { encrypted, iv } = await encryptChunk(chunk);
+        
         const chunkData = {
             type: 'file-chunk',
             fileId: fileId,
             index: chunkIndex,
-            chunk: chunk,
+            chunk: encrypted,
+            iv: iv,
             timestamp: Date.now()
         };
 
